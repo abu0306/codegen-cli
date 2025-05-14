@@ -8,13 +8,14 @@ const { setupRTK } = require('../templates/rtk');
 const { setupRouter } = require('../templates/router');
 
 async function createProject(projectName, options) {
+
   const { template, features } = options;
-  
+
   // 创建 Tauri 项目
   console.log(chalk.blue('正在创建 Tauri 项目...'));
-  execSync(`sh <(curl https://create.tauri.app/sh) -y ${projectName} --template ${template} --manager npm --identifier com.${projectName}.app`, { stdio: 'inherit' });
+  execSync(`bash -c 'curl -fsSL https://create.tauri.app/sh | sh -s -- -y ${projectName} --template ${template} --manager npm --identifier com.${projectName}.app'`, { stdio: 'inherit' });
 
-  // 进入项目目录
+  const originalCwd = process.cwd();
   process.chdir(projectName);
 
   // 安装额外依赖
@@ -45,6 +46,10 @@ async function createProject(projectName, options) {
   if (features.includes('api')) {
     await createApiExample();
   }
+
+  fs.appendFileSync('.gitignore', "\npackage-lock.json\nyarn.lock");
+
+  process.chdir(originalCwd);
 
   // 检查进度
   await checkProgress(projectName, features);

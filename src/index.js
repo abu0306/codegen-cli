@@ -12,19 +12,22 @@ program
   .command('create <project-name>')
   .description('创建一个新的 Tauri React 项目')
   .action(async (projectName) => {
-    const spinner = ora('正在创建项目...').start();
-    
+
+
     try {
       const answers = await inquirer.prompt([
         {
           type: 'list',
           name: 'template',
           message: '请选择项目模板:',
-          choices: ['react', 'react-ts'],
-          default: 'react'
+          choices: [
+            { name: 'React (TypeScript)', value: 'react-ts' },
+            { name: 'React (JavaScript)', value: 'react' },
+          ],
+          default: ["react-ts", "react"]
         },
         {
-          type: 'list',
+          type: 'checkbox',
           name: 'features',
           message: '请选择需要添加的功能:',
           choices: [
@@ -38,14 +41,13 @@ program
       ]);
 
       await createProject(projectName, answers);
-      spinner.succeed(chalk.green('项目创建成功！'));
-      
+
       console.log(chalk.blue('\n开始使用:'));
       console.log(`  cd ${projectName}`);
       console.log('  npm install');
       console.log('  npm run tauri dev');
     } catch (error) {
-      spinner.fail(chalk.red('项目创建失败: ' + error.message));
+      console.log(chalk.red('项目创建失败: ' + error.message));
       process.exit(1);
     }
   });

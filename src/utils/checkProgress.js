@@ -1,14 +1,19 @@
 const fs = require('fs-extra');
 const chalk = require('chalk');
+const path = require('path'); // 确保引入 path 模块
 
 async function checkProgress(projectName, features) {
   console.log(chalk.blue('\n检查项目创建进度...'));
-  
+
+  const projectPath = path.resolve(process.cwd(), projectName); // 将 projectName 转为绝对路径
+  console.log(chalk.blue('正在检查项目基础结构...' + projectPath));
+  console.log('当前工作目录:', process.cwd());
+
   const checks = [
     {
       name: '项目基础结构',
       check: async () => {
-        const exists = await fs.pathExists(projectName);
+        const exists = await fs.pathExists(projectPath); // 使用绝对路径检查
         return exists;
       }
     },
