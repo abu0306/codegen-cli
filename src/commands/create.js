@@ -13,13 +13,13 @@ async function createProject(projectName, options) {
 
   // 创建 Tauri 项目
   console.log(chalk.blue('正在创建 Tauri 项目...'));
-  execSync(`bash -c 'curl -fsSL https://create.tauri.app/sh | sh -s -- -y ${projectName} --template ${template} --manager npm --identifier com.${projectName}.app'`, { stdio: 'inherit' });
+  execSync(`bash -c 'curl -fsSL https://create.tauri.app/sh | sh -s -- -y ${projectName} --template ${template} --manager npm --identifier com.${projectName}.app'`, { stdio: 'pipe' });
 
   const originalCwd = process.cwd();
   process.chdir(projectName);
 
   // 安装额外依赖
-  console.log(chalk.blue('正在安装项目依赖...'));
+  // console.log(chalk.blue('正在安装项目依赖...'));
   const dependencies = [];
   if (features.includes('rtk')) {
     dependencies.push('@reduxjs/toolkit', 'react-redux');
@@ -28,7 +28,7 @@ async function createProject(projectName, options) {
     dependencies.push('react-router-dom');
   }
   if (dependencies.length > 0) {
-    execSync(`npm install ${dependencies.join(' ')}`, { stdio: 'inherit' });
+    execSync(`npm install ${dependencies.join(' ')}`, { stdio: 'pipe' });
   }
 
   // 设置功能
