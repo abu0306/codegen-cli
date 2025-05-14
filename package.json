@@ -7,7 +7,17 @@
     "codegen": "./src/index.js"
   },
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "build": "pkg ."
+  },
+  "pkg": {
+    "targets": [
+      "node18-macos-x64",
+      "node18-macos-arm64",
+      "node18-linux-x64",
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
   },
   "keywords": [
     "tauri",
@@ -18,27 +28,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tauri-apps/api": "^1.5.0",
-    "@tauri-apps/cli": "^1.5.0",
-    "@reduxjs/toolkit": "^2.0.0",
     "chalk": "^4.1.2",
     "commander": "^11.0.0",
     "fs-extra": "^11.1.1",
     "inquirer": "^8.2.5",
-    "ora": "^5.4.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-redux": "^9.0.0",
-    "react-router-dom": "^6.20.0"
+    "ora": "^5.4.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "eslint-plugin-react": "^7.33.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "typescript": "^5.0.0"
+    "pkg": "^5.8.1"
   }
-} 
+}
