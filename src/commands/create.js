@@ -33,18 +33,18 @@ async function createProject(projectName, options) {
 
   // 设置功能
   if (features.includes('rtk')) {
-    await setupRTK();
+    await setupRTK(template);
   }
   if (features.includes('router')) {
-    await setupRouter();
+    await setupRouter(template);
   }
   if (features.includes('eslint')) {
-    await setupESLint();
+    await setupESLint(template);
   }
 
   // 创建前后端调用示例
   if (features.includes('api')) {
-    await createApiExample();
+    await createApiExample(template);
   }
 
   fs.appendFileSync('.gitignore', "\npackage-lock.json\nyarn.lock");
@@ -55,7 +55,7 @@ async function createProject(projectName, options) {
   await checkProgress(projectName, features);
 }
 
-async function createApiExample() {
+async function createApiExample(template) {
   // 创建前端 API 调用示例
   const apiExample = `
 import { invoke } from '@tauri-apps/api/tauri';
@@ -80,8 +80,10 @@ async fn fetch_data() -> Result<String, String> {
 }
 `;
 
+  const fileExtension = template === 'react-ts' ? 'ts' : 'js';
+
   // 写入文件
-  await fs.outputFile('src/api/index.js', apiExample);
+  await fs.outputFile(`src/api/index.${fileExtension}`, apiExample);
   await fs.outputFile('src-tauri/src/commands.rs', rustExample);
 }
 
