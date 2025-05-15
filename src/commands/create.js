@@ -6,6 +6,7 @@ const { checkProgress } = require('../utils/checkProgress');
 const { setupESLint } = require('../utils/eslint');
 const { setupRTK } = require('../templates/rtk');
 const { setupRouter } = require('../templates/router');
+const { setupHuskyLintStaged } = require('../utils/husky');
 
 const globalSpinnerChars = ['-', '\\', '|', '/'];
 let overallProgressSpinnerIndex = 0;
@@ -121,6 +122,14 @@ async function createProject(projectName, options) {
 
   const originalCwd = process.cwd();
   process.chdir(projectName);
+
+  // 新增：husky + lint-staged 支持
+  await runAsyncTaskWithSpinner({
+    taskFn: setupHuskyLintStaged,
+    initialMessage: chalk.blue('正在配置 husky + lint-staged...'),
+    successMessage: chalk.green('husky + lint-staged 配置完成!'),
+    failureMessage: chalk.red('husky + lint-staged 配置失败.'),
+  });
 
   const dependencies = [];
   if (features.includes('rtk')) {
