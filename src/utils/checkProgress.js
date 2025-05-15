@@ -58,7 +58,7 @@ async function checkProgress(projectName, features) {
     checks.push({
       name: 'ESLint 配置',
       check: async () => {
-        const exists = await fs.pathExists(path.join(projectName, '.eslintrc.js'));
+        const exists = await fs.pathExists(path.join(projectName, 'eslint.config.js'));
         return exists;
       }
     });

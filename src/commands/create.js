@@ -130,17 +130,6 @@ async function createProject(projectName, options) {
     dependencies.push('react-router-dom');
   }
 
-  if (dependencies.length > 0) {
-    await runAsyncTaskWithSpinner({
-      cmd: 'npm',
-      args: ['install', ...dependencies],
-      initialMessage: chalk.blue('正在安装额外依赖...'),
-      successMessage: chalk.green('额外依赖安装成功!'),
-      failureMessage: chalk.red('额外依赖安装失败.'),
-    });
-  } else {
-    console.log(chalk.yellow('没有额外的依赖需要安装。'));
-  }
 
   const featureSetupTasks = [];
   if (features.includes('rtk')) {
@@ -174,6 +163,19 @@ async function createProject(projectName, options) {
     if (completedTasks === featureSetupTasks.length && completedTasks > 0) {
       console.log(chalk.green.bold('所有功能配置均已成功完成!'));
     }
+
+    if (dependencies.length > 0) {
+      await runAsyncTaskWithSpinner({
+        cmd: 'npm',
+        args: ['install', ...dependencies],
+        initialMessage: chalk.blue('正在安装额外依赖...'),
+        successMessage: chalk.green('额外依赖安装成功!'),
+        failureMessage: chalk.red('额外依赖安装失败.'),
+      });
+    } else {
+      console.log(chalk.yellow('没有额外的依赖需要安装。'));
+    }
+
   } else {
     console.log(chalk.yellow('\n没有选择额外的功能模块进行配置。'));
   }
@@ -186,7 +188,7 @@ async function createProject(projectName, options) {
 async function createApiExample(template) {
   // 1. 创建前端 API 调用示例
   const apiExample = `
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 export async function fetchData() {
   try {
@@ -201,10 +203,43 @@ export async function fetchData() {
   const fileExtension = template === 'react-ts' ? 'ts' : 'js';
   await fs.outputFile(`src/api/index.${fileExtension}`, apiExample);
 
+  console.log("当前工作目录", process.cwd());
+
+  const pkgJsonPath = path.resolve('package.json');
+
+  console.log("package.json 路径", pkgJsonPath);
+  const exist = await fs.pathExists(pkgJsonPath)
+  console.log("package.json 是否存在", exist);
+
+  let pkgJson = {};
+  if (await fs.pathExists(pkgJsonPath)) {
+    console.log(chalk.blue('正在读取 package.json...'));
+
+    pkgJson = await fs.readJson(pkgJsonPath);
+
+    console.log("package.json 内容", pkgJson);
+
+    const deps = { ...pkgJson.dependencies, ...pkgJson.devDependencies };
+
+    // 2. 检查 @tauri-apps/api 是否存在
+    console.log("deps", deps);
+
+    if (!deps['@tauri-apps/api']) {
+      console.log(chalk.blue('正在安装 @tauri-apps/api...'));
+      await runAsyncTaskWithSpinner({
+        cmd: 'npm',
+        args: ['install', '@tauri-apps/api'],
+        initialMessage: chalk.blue('安装 @tauri-apps/api...'),
+        successMessage: chalk.green('@tauri-apps/api 安装成功!'),
+        failureMessage: chalk.red('@tauri-apps/api 安装失败!'),
+      });
+    }
+  }
+
   // 2. 写入 commands.rs
   const commandsRsContent = `
 #[tauri::command]
-async fn fetch_data() -> Result<String, String> {
+pub async fn fetch_data() -> Result<String, String> {
     // 这里添加你的业务逻辑
     Ok("Hello from Rust! From commands.rs".to_string())
 }
@@ -230,13 +265,6 @@ async fn fetch_data() -> Result<String, String> {
   const mainRsDelegatesToLib = hasLibRunCall && mainDoesNotHaveBuilder;
 
   if (mainRsDelegatesToLib) {
-    const libNameMatch = mainRsContentOriginal.match(libRunPattern);
-    const libName = libNameMatch ? libNameMatch[1] : "your_library_module";
-    if (!mainRsContentOriginal.includes("mod commands;")) {
-      mainRsContentModified = "mod commands;\n" + mainRsContentOriginal;
-      await fs.outputFile(mainRsPath, mainRsContentModified);
-      console.log(chalk.green("       + Automatically added 'mod commands;' to 'src-tauri/src/main.rs'. This is likely needed for 'crate::commands' in your lib."));
-    }
     // 自动处理 lib.rs
     await patchLibRsForApiHandler();
     return;
