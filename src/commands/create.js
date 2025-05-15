@@ -14,7 +14,7 @@ let overallProgressSpinnerIndex = 0;
 async function runAsyncTaskWithSpinner({ taskFn, cmd, args, initialMessage, successMessage, failureMessage }) {
   const spinnerChars = ['-', '\\', '|', '/'];
   let spinnerIndex = 0;
-  
+
   const updateSpinner = () => {
     process.stdout.write(`\r${spinnerChars[spinnerIndex]} ${initialMessage}`);
     spinnerIndex = (spinnerIndex + 1) % spinnerChars.length;
@@ -97,7 +97,7 @@ function displayHashProgressBar(current, total, taskDescription, barWidth = 30) 
   const filledBar = '#'.repeat(filledCount);
   const emptyBar = '-'.repeat(emptyCount);
 
-  process.stdout.write('\r' + ' '.repeat(process.stdout.columns > 0 ? process.stdout.columns -1 : 50) + '\r');
+  process.stdout.write('\r' + ' '.repeat(process.stdout.columns > 0 ? process.stdout.columns - 1 : 50) + '\r');
   process.stdout.write(chalk.cyan(`${taskDescription} ${currentSpinnerChar} `) + `[${chalk.green(filledBar)}${chalk.gray(emptyBar)}] ${current}/${total} (${Math.floor(percentage * 100)}%)`);
   if (current === total && total > 0) {
     process.stdout.write('\n');
@@ -172,7 +172,7 @@ async function createProject(projectName, options) {
       displayHashProgressBar(completedTasks, featureSetupTasks.length, '功能模块配置进度');
     }
     if (completedTasks === featureSetupTasks.length && completedTasks > 0) {
-       console.log(chalk.green.bold('所有功能配置均已成功完成!'));
+      console.log(chalk.green.bold('所有功能配置均已成功完成!'));
     }
   } else {
     console.log(chalk.yellow('\n没有选择额外的功能模块进行配置。'));
@@ -184,7 +184,7 @@ async function createProject(projectName, options) {
 }
 
 async function createApiExample(template) {
-  // 创建前端 API 调用示例
+  // 1. 创建前端 API 调用示例
   const apiExample = `
 import { invoke } from '@tauri-apps/api/tauri';
 
@@ -201,7 +201,7 @@ export async function fetchData() {
   const fileExtension = template === 'react-ts' ? 'ts' : 'js';
   await fs.outputFile(`src/api/index.${fileExtension}`, apiExample);
 
-  // commands.rs 内容
+  // 2. 写入 commands.rs
   const commandsRsContent = `
 #[tauri::command]
 async fn fetch_data() -> Result<String, String> {
@@ -213,10 +213,9 @@ pub fn handler() -> impl Fn(tauri::Invoke) {
     tauri::generate_handler![fetch_data]
 }
 `;
-  // 始终写入新的 commands.rs 文件
   await fs.outputFile('src-tauri/src/commands.rs', commandsRsContent);
 
-  // --- 开始处理 main.rs --- 
+  // 3. 处理 main.rs
   const mainRsPath = 'src-tauri/src/main.rs';
   let mainRsContentOriginal;
   try {
@@ -224,100 +223,72 @@ pub fn handler() -> impl Fn(tauri::Invoke) {
   } catch (e) {
     console.error(chalk.red(`Error reading ${mainRsPath}: ${e.message}`));
     console.log(chalk.yellow("Skipping main.rs modification for API handler due to read error."));
-    return; // Cannot proceed if main.rs is unreadable
+    return;
   }
-  
-  let mainRsContentModified = mainRsContentOriginal; // Work on a copy
+  let mainRsContentModified = mainRsContentOriginal;
 
-  // 检测 main.rs 是否委托给库 (e.g., pdf_lib::run())
+  // 检查是否为库委托模式
   const libRunPattern = /([a-zA-Z_][a-zA-Z0-9_]*)::run\(\)/;
   const hasLibRunCall = libRunPattern.test(mainRsContentOriginal);
   const mainDoesNotHaveBuilder = !mainRsContentOriginal.includes("tauri::Builder::default");
-  
-  // Debugging logs
-  console.log(chalk.magentaBright(`[DEBUG] Checking for library delegation in main.rs:`));
-  console.log(chalk.magentaBright(`  - main.rs content (first 100 chars): "${mainRsContentOriginal.substring(0,100).replace(/\n/g, "\\n")}"`));
-  console.log(chalk.magentaBright(`  - Pattern '${libRunPattern.toString()}' test (hasLibRunCall): ${hasLibRunCall}`));
-  console.log(chalk.magentaBright(`  - Does not include 'tauri::Builder::default' (mainDoesNotHaveBuilder): ${mainDoesNotHaveBuilder}`));
-
   const mainRsDelegatesToLib = hasLibRunCall && mainDoesNotHaveBuilder;
-  console.log(chalk.magentaBright(`  - Calculated mainRsDelegatesToLib: ${mainRsDelegatesToLib}`));
 
   if (mainRsDelegatesToLib) {
     const libNameMatch = mainRsContentOriginal.match(libRunPattern);
     const libName = libNameMatch ? libNameMatch[1] : "your_library_module";
-
-    console.log(chalk.yellowBright(`[INFO] Detected that 'src-tauri/src/main.rs' seems to use a library pattern (e.g., '${libName}::run()').`));
-    console.log(chalk.yellowBright("       Automatic configuration of 'main.rs' for the API handler will be largely skipped."));
-    console.log(chalk.magenta("       Please perform the following manual steps for API setup:"));
-    console.log(chalk.cyan  ("       1. Ensure 'src-tauri/src/commands.rs' was created (it contains 'fetch_data' and 'handler')."));
-
     if (!mainRsContentOriginal.includes("mod commands;")) {
       mainRsContentModified = "mod commands;\n" + mainRsContentOriginal;
       await fs.outputFile(mainRsPath, mainRsContentModified);
       console.log(chalk.green("       + Automatically added 'mod commands;' to 'src-tauri/src/main.rs'. This is likely needed for 'crate::commands' in your lib."));
-    } else {
-      console.log(chalk.blue("       - 'mod commands;' already present in 'src-tauri/src/main.rs'."));
     }
-    console.log(chalk.cyan  ("       2. In your Rust library file (e.g., 'src-tauri/src/lib.rs' or 'src-tauri/src/" + libName + ".rs'),"));
-    console.log(chalk.cyan  ("          find your 'tauri::Builder::default()' chain."));
-    console.log(chalk.cyan  ("       3. Add '.invoke_handler(crate::commands::handler())' to the builder chain."));
-    console.log(chalk.gray(
-`          Example (within your library's run() function):
-          // ...
-          tauri::Builder::default()
-              .invoke_handler(crate::commands::handler()) // <-- ADD THIS LINE
-              // ... other builder methods ...
-              .run(tauri::generate_context!())
-              // ...
-`));
-    return; // IMPORTANT: Exit early, no further main.rs mods for handler here
+    // 自动处理 lib.rs
+    await patchLibRsForApiHandler();
+
   }
 
-  // ---- 如果不是委托给库的模式，则执行标准的 main.rs 修改逻辑 ----
+  // 非库委托模式，自动处理 main.rs
   let successfullyConfiguredMainRs = false;
-
-  // 确保 main.rs 顶部有 mod commands;
   if (!mainRsContentModified.includes("mod commands;")) {
     mainRsContentModified = "mod commands;\n" + mainRsContentModified;
   }
-
   const invokeHandlerRegex = /\.invoke_handler\(.*?\)/s;
   const newInvokeHandler = ".invoke_handler(commands::handler())";
   const builderDefaultRegex = /(tauri::Builder::default\(\))(\s*\.\s*)/;
 
   if (mainRsContentModified.includes("commands::handler()")) {
     console.log(chalk.blue("invoke_handler in main.rs already uses commands::handler()."));
-    successfullyConfiguredMainRs = true; 
+    successfullyConfiguredMainRs = true;
   } else if (invokeHandlerRegex.test(mainRsContentModified)) {
     mainRsContentModified = mainRsContentModified.replace(invokeHandlerRegex, newInvokeHandler);
     console.log(chalk.yellow("Replaced existing invoke_handler in main.rs with commands::handler(). Please verify."));
     successfullyConfiguredMainRs = true;
   } else if (builderDefaultRegex.test(mainRsContentModified)) {
     mainRsContentModified = mainRsContentModified.replace(
-        builderDefaultRegex,
-        `$1\n      ${newInvokeHandler}$2` 
+      builderDefaultRegex,
+      `$1\n      ${newInvokeHandler}$2`
     );
     console.log(chalk.yellow("Attempted to insert invoke_handler after tauri::Builder::default(). Please verify main.rs."));
     successfullyConfiguredMainRs = true;
   } else if (mainRsContentModified.includes(".run(tauri::generate_context!())")) {
-    mainRsContentModified = mainRsContentModified.replace(".run(tauri::generate_context!())", `${newInvokeHandler}\n        .run(tauri::generate_context!())`);
+    mainRsContentModified = mainRsContentModified.replace(
+      ".run(tauri::generate_context!())",
+      `${newInvokeHandler}\n        .run(tauri::generate_context!())`
+    );
     console.log(chalk.yellow("Added commands::handler() before .run() in main.rs. Please verify."));
     successfullyConfiguredMainRs = true;
   }
 
   if (mainRsContentModified !== mainRsContentOriginal) {
-      await fs.outputFile(mainRsPath, mainRsContentModified);
+    await fs.outputFile(mainRsPath, mainRsContentModified);
   }
 
   if (!successfullyConfiguredMainRs) {
-    // All automatic attempts for main.rs failed (and it wasn't a lib delegation case)
     console.log(chalk.red("Could not automatically configure invoke_handler in src-tauri/src/main.rs."));
     console.log(chalk.yellow("Please manually ensure your 'src-tauri/src/main.rs' includes 'mod commands;' at the top (if not already present)."));
     console.log(chalk.yellow("Then, ensure your tauri::Builder sequence calls '.invoke_handler(commands::handler())'."));
     console.log(chalk.yellow("Example structure:"));
     console.log(chalk.gray(
-`// src-tauri/src/main.rs
+      `// src-tauri/src/main.rs
 mod commands;
 
 fn main() {
@@ -327,13 +298,41 @@ fn main() {
     .expect("error while running tauri application");
 }
 `));
-    if (mainRsContentModified !== mainRsContentOriginal && mainRsContentModified.includes("mod commands;\n") && !mainRsContentOriginal.includes("mod commands;")){
-        console.log(chalk.yellow("Note: 'mod commands;' was added to main.rs, but full handler setup failed. Check main.rs and the instructions above."));
-    } else if (mainRsContentModified === mainRsContentOriginal){
-        // This means no modification was even attempted or deemed necessary before this final error.
-        // This case might be rare if 'mod commands;' is always added if missing.
-    }
   }
+}
+
+// 自动 patch lib.rs，合并 fetch_data
+async function patchLibRsForApiHandler(libName = "lib") {
+  const libRsPath = `src-tauri/src/${libName}.rs`;
+  let libContent;
+  try {
+    libContent = await fs.readFile(libRsPath, 'utf-8');
+  } catch (e) {
+    console.error(chalk.red(`Error reading ${libRsPath}: ${e.message}`));
+    return;
+  }
+  // 1. 确保 mod commands; 存在
+  if (!libContent.includes('mod commands;')) {
+    libContent = 'mod commands;\n' + libContent;
+    console.log(chalk.green("Added 'mod commands;' to lib.rs"));
+  }
+  // 2. 合并 invoke_handler
+  const invokeHandlerPattern = /\.invoke_handler\(tauri::generate_handler!\[([^\]]*)\]\)/;
+  if (invokeHandlerPattern.test(libContent)) {
+    libContent = libContent.replace(
+      invokeHandlerPattern,
+      (match, p1) => {
+        if (p1.includes('commands::fetch_data')) {
+          return match;
+        }
+        return `.invoke_handler(tauri::generate_handler![${p1}, commands::fetch_data])`;
+      }
+    );
+    console.log(chalk.green("Patched invoke_handler in lib.rs to include commands::fetch_data"));
+  } else {
+    console.log(chalk.yellow("No invoke_handler(tauri::generate_handler![...]) found in lib.rs, please check manually."));
+  }
+  await fs.writeFile(libRsPath, libContent);
 }
 
 module.exports = {
