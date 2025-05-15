@@ -239,7 +239,7 @@ async fn fetch_data() -> Result<String, String> {
     }
     // 自动处理 lib.rs
     await patchLibRsForApiHandler();
-
+    return;
   }
 
   // 非库委托模式，自动处理 main.rs
@@ -278,6 +278,7 @@ async fn fetch_data() -> Result<String, String> {
     await fs.outputFile(mainRsPath, mainRsContentModified);
   }
 
+  console.log("==========================", successfullyConfiguredMainRs);
   if (!successfullyConfiguredMainRs) {
     console.log(chalk.red("Could not automatically configure invoke_handler in src-tauri/src/main.rs."));
     console.log(chalk.yellow("Please manually ensure your 'src-tauri/src/main.rs' includes 'mod commands;' at the top (if not already present)."));
