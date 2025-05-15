@@ -208,10 +208,6 @@ async fn fetch_data() -> Result<String, String> {
     // 这里添加你的业务逻辑
     Ok("Hello from Rust! From commands.rs".to_string())
 }
-
-pub fn handler() -> impl Fn(tauri::Invoke) {
-    tauri::generate_handler![fetch_data]
-}
 `;
   await fs.outputFile('src-tauri/src/commands.rs', commandsRsContent);
 
@@ -316,21 +312,44 @@ async function patchLibRsForApiHandler(libName = "lib") {
     libContent = 'mod commands;\n' + libContent;
     console.log(chalk.green("Added 'mod commands;' to lib.rs"));
   }
-  // 2. 合并 invoke_handler
-  const invokeHandlerPattern = /\.invoke_handler\(tauri::generate_handler!\[([^\]]*)\]\)/;
-  if (invokeHandlerPattern.test(libContent)) {
-    libContent = libContent.replace(
-      invokeHandlerPattern,
-      (match, p1) => {
-        if (p1.includes('commands::fetch_data')) {
-          return match;
-        }
-        return `.invoke_handler(tauri::generate_handler![${p1}, commands::fetch_data])`;
-      }
-    );
-    console.log(chalk.green("Patched invoke_handler in lib.rs to include commands::fetch_data"));
+
+  // 2. 查找 .invoke_handler(...) 块
+  const invokeHandlerBlockPattern = /\.invoke_handler\(([\s\S]*?)\)/m;
+  const handlerPattern = /(tauri::generate_handler!\[)([\s\S]*?)\]/g;
+
+  const match = libContent.match(invokeHandlerBlockPattern);
+  if (match) {
+    const inner = match[1];
+    if (inner.includes('#[cfg(')) {
+      // 已经是多平台，分别插入
+      const replaced = inner.replace(handlerPattern, (m, prefix, list) => {
+        if (list.includes('commands::fetch_data')) return m;
+        const trimmed = list.trim().replace(/,\s*$/, '');
+        const newList = trimmed ? `${trimmed}, commands::fetch_data` : 'commands::fetch_data';
+        return `${prefix}${newList}]`;
+      });
+      libContent = libContent.replace(invokeHandlerBlockPattern, `.invoke_handler(${replaced})`);
+      console.log(chalk.green("Patched multi-platform invoke_handler in lib.rs to include commands::fetch_data"));
+    } else {
+      // 单平台，自动转换为多平台
+      const handlerMatch = inner.match(/tauri::generate_handler!\[([\s\S]*?)\]/m);
+      const handlerList = handlerMatch ? handlerMatch[1].trim().replace(/,\s*$/, '') : '';
+      const newHandlerList = handlerList.includes('commands::fetch_data')
+        ? handlerList
+        : (handlerList ? `${handlerList}, commands::fetch_data` : 'commands::fetch_data');
+      const multiPlatformBlock = [
+        '.invoke_handler(',
+        '            #[cfg(not(target_os = "windows"))]',
+        `            tauri::generate_handler![${newHandlerList}],`,
+        '            #[cfg(target_os = "windows")]',
+        `            tauri::generate_handler![${newHandlerList}]`,
+        '        )'
+      ].join('\n');
+      libContent = libContent.replace(invokeHandlerBlockPattern, multiPlatformBlock);
+      console.log(chalk.green("Converted to multi-platform invoke_handler and included commands::fetch_data"));
+    }
   } else {
-    console.log(chalk.yellow("No invoke_handler(tauri::generate_handler![...]) found in lib.rs, please check manually."));
+    console.log(chalk.yellow("No invoke_handler found in lib.rs, please check manually."));
   }
   await fs.writeFile(libRsPath, libContent);
 }
