@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "build": "pkg . --no-bytecode"
+    "build": "pkg ."
   },
   "pkg": {
     "targets": [
