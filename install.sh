@@ -26,7 +26,7 @@ else
 fi
 
 TAG=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep tag_name | cut -d '"' -f 4)
-URL="https://github.com/$REPO/releases/download/$TAG/$FILE"
+URL="https://github.com/$REPO/releases/tag/$TAG/$FILE"
 
 echo "Downloading $FILE from $URL ..."
 curl -L -o codegen "$URL"
