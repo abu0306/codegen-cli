@@ -15,7 +15,7 @@
 ## 安装
 
 ```bash
-npm install -g codegen-cli
+curl https://raw.githubusercontent.com/abu0306/codegen-cli/master/install.sh | sh 
 ```
 
 ## 使用方法
