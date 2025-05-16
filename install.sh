@@ -8,16 +8,16 @@ ARCH="$(uname -m)"
 
 if [ "$PLATFORM" = "darwin" ]; then
   if [ "$ARCH" = "arm64" ]; then
-    FILE="codegen-macos-arm64"
+    FILE="codegen-cli-macos-arm64"
   else
-    FILE="codegen-macos-x64"
+    FILE="codegen-cli-macos-x64"
   fi
   INSTALL_DIR="/usr/local/bin"
 elif [ "$PLATFORM" = "linux" ]; then
-  FILE="codegen-linux-x64"
+  FILE="codegen-cli-linux-x64"
   INSTALL_DIR="/usr/local/bin"
 elif echo "$PLATFORM" | grep -qi "mingw"; then
-  FILE="codegen-win-x64.exe"
+  FILE="codegen-cli-win-x64.exe"
   INSTALL_DIR="$HOME/.local/bin"
   mkdir -p "$INSTALL_DIR"
 else
@@ -26,7 +26,7 @@ else
 fi
 
 TAG=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep tag_name | cut -d '"' -f 4)
-URL="https://github.com/$REPO/releases/tag/$TAG/$FILE"
+URL="https://github.com/$REPO/releases/download/$TAG/$FILE"
 
 echo "Downloading $FILE from $URL ..."
 curl -L -o codegen "$URL"
