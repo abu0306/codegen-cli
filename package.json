@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "build": "pkg ."
+    "build": "pkg . --no-bytecode"
   },
   "pkg": {
     "targets": [
@@ -17,9 +17,7 @@
       "node18-linux-x64",
       "node18-win-x64"
     ],
-    "compression": "GZip",
-    "outputPath": "dist",
-    "compile": false
+    "outputPath": "dist"
   },
   "keywords": [
     "tauri",
