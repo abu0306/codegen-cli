@@ -67,9 +67,9 @@ function checkUpdate() {
   await checkUpdate();
   program
     .version(pkgVersion)
-    .description('Tauri React 项目脚手架工具')
+    .description('源语前端脚手架工具')
     .command('create <project-name>')
-    .description('创建一个新的 Tauri React 项目')
+    .description('创建一个新的 前端 项目')
     .action(async (projectName) => {
       try {
         const answers = await inquirer.prompt([
