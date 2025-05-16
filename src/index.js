@@ -6,7 +6,9 @@ const chalk = require('chalk');
 const { program } = require('commander');
 const { createProject } = require('./commands/create');
 const { compareVersion } = require('./utils/version');
-const pkgVersion = '0.0.1'; // 当前 CLI 版本
+const path = require('path');
+const pkg = require(path.join(__dirname, '../package.json'));
+const pkgVersion = pkg.version; // 当前 CLI 版本
 const repo = 'abu0306/codegen-cli'; // 替换为你的仓库
 
 // 检查最新版本
