@@ -212,13 +212,7 @@ export async function fetchData() {
   const fileExtension = template === 'react-ts' ? 'ts' : 'js';
   await fs.outputFile(`src/api/index.${fileExtension}`, apiExample);
 
-  console.log("当前工作目录", process.cwd());
-
   const pkgJsonPath = path.resolve('package.json');
-
-  console.log("package.json 路径", pkgJsonPath);
-  const exist = await fs.pathExists(pkgJsonPath)
-  console.log("package.json 是否存在", exist);
 
   let pkgJson = {};
   if (await fs.pathExists(pkgJsonPath)) {
