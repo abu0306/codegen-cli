@@ -2,8 +2,10 @@ name: Release Binaries
 
 on:
   workflow_dispatch:
-    tags:
-      - 'v*.*.*'
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
 
 jobs:
   build:
@@ -27,6 +29,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.event.inputs.tag }}
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
