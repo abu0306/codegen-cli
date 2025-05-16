@@ -33,7 +33,7 @@ curl -L -o codegen "$URL"
 chmod +x codegen
 
 echo "Installing to $INSTALL_DIR ..."
-mv codegen "$INSTALL_DIR/codegen"
+sudo mv codegen "$INSTALL_DIR/codegen"
 
 # 检查 $INSTALL_DIR 是否在 PATH
 case ":$PATH:" in
