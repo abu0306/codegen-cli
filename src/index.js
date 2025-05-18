@@ -84,20 +84,37 @@ function checkUpdate() {
             default: ["react-ts", "react"]
           },
           {
+            type: 'list',
+            name: 'stateManagement',
+            message: '请选择状态管理库:',
+            choices: [
+              { name: 'Redux Toolkit', value: 'rtk' },
+              { name: 'Zustand', value: 'zustand' }
+            ],
+            default: 'rtk'
+          }
+        ]);
+
+        const features = await inquirer.prompt([
+          {
             type: 'checkbox',
             name: 'features',
             message: '请选择需要添加的功能:',
             choices: [
-              { name: 'Redux Toolkit 状态管理', value: 'rtk' },
               { name: 'React Router 路由', value: 'router' },
               { name: 'ESLint 配置', value: 'eslint' },
               { name: '前后端调用示例', value: 'api' }
             ],
-            default: ['rtk', 'router', 'eslint', 'api']
+            default: ['router', 'eslint', 'api']
           }
         ]);
 
-        await createProject(projectName, answers);
+        features.features.push(answers.stateManagement);
+
+        await createProject(projectName, {
+          template: answers.template,
+          features: features.features
+        });
 
         console.log(chalk.blue('\n开始使用:'));
         console.log(`  cd ${projectName}`);

@@ -7,6 +7,8 @@ const { setupESLint } = require("../utils/eslint");
 const { setupRTK } = require("../templates/rtk");
 const { setupRouter } = require("../templates/router");
 const { setupHuskyLintStaged } = require("../utils/husky");
+const { setupZustand } = require("../templates/zustand");
+const inquirer = require("inquirer");
 
 const globalSpinnerChars = ["-", "\\", "|", "/"];
 let overallProgressSpinnerIndex = 0;
@@ -320,18 +322,17 @@ async function createProject(projectName, options) {
   const dependencies = [];
   if (features.includes("rtk")) {
     dependencies.push("@reduxjs/toolkit", "react-redux");
+    await setupRTK(template);
+  }
+  if (features.includes("zustand")) {
+    dependencies.push("zustand");
+    await setupZustand(template);
   }
   if (features.includes("router")) {
     dependencies.push("react-router-dom");
   }
 
   const featureSetupTasks = [];
-  if (features.includes("rtk")) {
-    featureSetupTasks.push({
-      name: "Redux Toolkit",
-      task: () => setupRTK(template),
-    });
-  }
   if (features.includes("router")) {
     featureSetupTasks.push({
       name: "React Router",
