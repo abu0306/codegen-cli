@@ -140,6 +140,17 @@ function displayHashProgressBar(
 async function createProject(projectName, options) {
   const { template, features } = options;
 
+  const targetDir = path.resolve(projectName);
+  if (await fs.pathExists(targetDir)) {
+    const files = await fs.readdir(targetDir);
+    if (files.length > 0) {
+      console.log(
+        chalk.red(`\n目录 "${projectName}" 已存在且非空，无法创建项目。`)
+      );
+      throw new Error("目标目录非空，操作已取消。");
+    }
+  }
+
   // Create Tauri project using runAsyncTaskWithSpinner
   const tauriCreateCommand = `curl -fsSL https://create.tauri.app/sh | sh -s -- -y ${projectName} --template ${template} --manager npm --identifier com.${projectName}.app`;
   await runAsyncTaskWithSpinner({
