@@ -478,6 +478,7 @@ pub async fn fetch_data() -> Result<String, String> {
     Ok("Hello from Rust! From commands.rs".to_string())
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct HttpRequest<T> {
     path: String,
     method: String,
