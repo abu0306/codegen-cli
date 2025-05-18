@@ -243,8 +243,6 @@ async function createProject(projectName, options) {
         failureMessage: chalk.red("额外依赖安装失败."),
       });
 
-      console.log("lint:fix",process.cwd())
-
       await runAsyncTaskWithSpinner({
         cmd: "npm",
         args: ["run", "lint:fix"],
