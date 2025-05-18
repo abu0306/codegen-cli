@@ -241,6 +241,18 @@ async function createProject(projectName, options) {
         successMessage: chalk.green("额外依赖安装成功!"),
         failureMessage: chalk.red("额外依赖安装失败."),
       });
+
+      console.log("lint:fix",process.cwd())
+
+      await runAsyncTaskWithSpinner({
+        cmd: "npm",
+        args: ["run", "lint:fix"],
+        initialMessage: chalk.blue("正在执行 lint:fix..."),
+        successMessage: chalk.green("lint:fix 执行成功!"),
+        failureMessage: chalk.red("lint:fix 执行失败."),
+      });
+
+
     } else {
       console.log(chalk.yellow("没有额外的依赖需要安装。"));
     }
