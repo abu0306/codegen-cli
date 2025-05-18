@@ -50,26 +50,12 @@ ${isTypeScript ? '\nexport default About;' : ''}
   const routerConfigFileContent = `
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import Home from '../pages/Home'; // Node will resolve .jsx or .tsx
-import About from '../pages/About'; // Node will resolve .jsx or .tsx
+import Home from '@/pages/Home'; 
+import About from '@/pages/About'; 
 
 ${isTypeScript ? 'const AppRouter: React.FC = () => {' : 'export default function AppRouter() {'}
   return (
     <BrowserRouter>
-      <div>
-        <nav>
-          <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li>
-              <Link to="/about">About</Link>
-            </li>
-          </ul>
-        </nav>
-
-        <hr />
-
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
@@ -91,11 +77,9 @@ ${isTypeScript ? '\nexport default AppRouter;' : ''}
     appFileContent = await fs.readFile(appFilePath, 'utf8');
   } catch (error) {
     console.warn(chalk.yellow(`Warning: ${appFilePath} not found. Creating a new one.`));
-    // If App file doesn't exist, RTK wasn't run or didn't create it.
-    // So, create a simple App file that just renders AppRouter.
     appFileContent = `
 import React from 'react';
-import AppRouter from './routes';
+import AppRouter from '@/routes';
 
 ${isTypeScript ? 'const App: React.FC = () => {' : 'function App() {'}
   return <AppRouter />;
@@ -105,7 +89,6 @@ export default App;
     `.trim();
   }
 
-  // Check if AppRouter is already imported and used
   if (appFileContent.includes('import AppRouter from ') && appFileContent.includes('<AppRouter />')) {
     console.log(chalk.blue(`${appFilePath} already seems to include AppRouter. Skipping modification.`));
   } else {
@@ -123,10 +106,7 @@ export default App;
         }
     }
 
-    // Integrate <AppRouter />
     if (appFileContent.includes('<Provider store={store}>')) {
-      // RTK Provider exists, inject AppRouter inside it
-      // Look for a placeholder comment or a common pattern
       const rtkPlaceholder = '{\/* Your existing app structure or <AppRouter /> if using router */}';
       const tauriWelcomePlaceholder = '{/* Replace div below with <AppRouter /> if you have routing enabled */}';
       const genericDivPlaceholder = '<div>\n        <h1>Welcome to Tauri!</h1>'; // From RTK template
@@ -135,16 +115,11 @@ export default App;
         appFileContent = appFileContent.replace(rtkPlaceholder, '<AppRouter />');
       } else if (appFileContent.includes(tauriWelcomePlaceholder)) {
         appFileContent = appFileContent.replace(tauriWelcomePlaceholder, '<AppRouter />');
-         // Also remove the now-redundant div that contained the placeholder
         appFileContent = appFileContent.replace(/<div>\s*<AppRouter \/>\s*<\/div>/, '<AppRouter />'); 
       } else if (appFileContent.includes(genericDivPlaceholder)) {
-        // Replace the generic welcome div with AppRouter
         appFileContent = appFileContent.replace(genericDivPlaceholder, '<AppRouter />\n      </div>'); 
-        // This is a bit crude, might need refinement for cleaner replacement
         appFileContent = appFileContent.replace(/<p>Edit src\/App\.(jsx|tsx) and save to reload\.<\/p>[^<]*<p>Redux Toolkit is set up\.[^<]*<\/p>[^<]*(\{\s*\/\* Example component[^}]*\*\/\}\s*)?<\/div>/, '');
       } else {
-        // Fallback: try to wrap the Provider's children, or append if it's too complex
-        // This part can be tricky and might need a more robust AST-based modification
         appFileContent = appFileContent.replace(
           /(<Provider[^>]*>)([^<]*)(<\/Provider>)/,
           '$1\n      <AppRouter />\n    $3'
@@ -152,7 +127,6 @@ export default App;
         console.warn(chalk.yellow(`Attempted to inject AppRouter into existing Provider in ${appFilePath}, please verify.`));
       }
     } else {
-      // No RTK Provider, or App file was newly created. Overwrite with basic App + AppRouter structure.
       appFileContent = `
 import React from 'react';
 import AppRouter from './routes';

@@ -141,6 +141,147 @@ function displayHashProgressBar(
   }
 }
 
+async function setupPathAliases(template) {
+  const isTypeScript = template === 'react-ts';
+  
+  // Update vite.config.ts/js
+  const viteConfigPath = `vite.config.${isTypeScript ? 'ts' : 'js'}`;
+  let viteConfig = '';
+  try {
+    viteConfig = await fs.readFile(viteConfigPath, 'utf-8');
+  } catch (e) {
+    console.warn(chalk.yellow(`警告: 无法读取 ${viteConfigPath}，跳过 Vite 别名配置`));
+  }
+
+  // 检查是否已存在 resolve.alias 配置
+  if (viteConfig && !viteConfig.includes('resolve:') || !viteConfig.includes('alias:')) {
+    // 准备要添加的配置
+    const aliasConfig = `  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },`;
+
+    // 在 defineConfig 中添加配置
+    if (viteConfig.includes('defineConfig(')) {
+      // 检查是否是异步配置
+      const isAsyncConfig = viteConfig.includes('defineConfig(async');
+      
+      if (isAsyncConfig) {
+        // 处理异步配置
+        const configRegex = /defineConfig\(async\s*\([^)]*\)\s*=>\s*\(\{([\s\S]*?)\}\)\)/;
+        const match = viteConfig.match(configRegex);
+        
+        if (match) {
+          const configContent = match[1];
+          let newConfig = configContent;
+
+          // 在 plugins 配置后添加 resolve 配置
+          if (configContent.includes('plugins:')) {
+            // 找到 plugins 配置的结束位置
+            const pluginsEndIndex = configContent.indexOf('],');
+            if (pluginsEndIndex !== -1) {
+              // 在 plugins 配置后添加 resolve 配置
+              newConfig = configContent.slice(0, pluginsEndIndex + 2) + '\n' + aliasConfig + configContent.slice(pluginsEndIndex + 2);
+            }
+          } else {
+            // 如果没有 plugins 配置，直接添加
+            newConfig = configContent + '\n' + aliasConfig;
+          }
+
+          viteConfig = viteConfig.replace(configRegex, `defineConfig(async () => ({${newConfig}}))`);
+        }
+      } else {
+        // 处理同步配置
+        const configRegex = /defineConfig\(\{([\s\S]*?)\}\)/;
+        const match = viteConfig.match(configRegex);
+        
+        if (match) {
+          const configContent = match[1];
+          let newConfig = configContent;
+
+          // 在 plugins 配置后添加 resolve 配置
+          if (configContent.includes('plugins:')) {
+            // 找到 plugins 配置的结束位置
+            const pluginsEndIndex = configContent.indexOf('],');
+            if (pluginsEndIndex !== -1) {
+              // 在 plugins 配置后添加 resolve 配置
+              newConfig = configContent.slice(0, pluginsEndIndex + 2) + '\n' + aliasConfig + configContent.slice(pluginsEndIndex + 2);
+            }
+          } else {
+            // 如果没有 plugins 配置，直接添加
+            newConfig = configContent + '\n' + aliasConfig;
+          }
+
+          viteConfig = viteConfig.replace(configRegex, `defineConfig({${newConfig}})`);
+        }
+      }
+      
+      try {
+        await fs.writeFile(viteConfigPath, viteConfig);
+        console.log(chalk.green(`✓ 已更新 ${viteConfigPath} 的路径别名配置`));
+      } catch (e) {
+        console.warn(chalk.yellow(`警告: 无法写入 ${viteConfigPath}，跳过 Vite 别名配置`));
+      }
+    }
+  } else {
+    console.log(chalk.blue(`✓ ${viteConfigPath} 已包含路径别名配置`));
+  }
+
+  // 对于 TypeScript 项目，更新 tsconfig.json
+  if (isTypeScript) {
+    const tsconfigPath = 'tsconfig.json';
+    let tsconfig = {};
+    
+    try {
+      // 读取现有的 tsconfig.json
+      const tsconfigContent = await fs.readFile(tsconfigPath, 'utf-8');
+      tsconfig = JSON.parse(tsconfigContent);
+    } catch (e) {
+      console.warn(chalk.yellow(`警告: 无法读取 ${tsconfigPath}，将创建新的配置`));
+      // 创建基本的 tsconfig 配置
+      tsconfig = {
+        compilerOptions: {
+          target: "ES2020",
+          useDefineForClassFields: true,
+          lib: ["ES2020", "DOM", "DOM.Iterable"],
+          module: "ESNext",
+          skipLibCheck: true,
+          moduleResolution: "bundler",
+          allowImportingTsExtensions: true,
+          resolveJsonModule: true,
+          isolatedModules: true,
+          noEmit: true,
+          jsx: "react-jsx",
+          strict: true,
+          noUnusedLocals: true,
+          noUnusedParameters: true,
+          noFallthroughCasesInSwitch: true
+        },
+        include: ["src"],
+        references: [{ path: "./tsconfig.node.json" }]
+      };
+    }
+
+    // 确保 compilerOptions 存在
+    tsconfig.compilerOptions = tsconfig.compilerOptions || {};
+    
+    // 添加路径别名配置
+    tsconfig.compilerOptions.baseUrl = '.';
+    tsconfig.compilerOptions.paths = {
+      '@/*': ['src/*']
+    };
+
+    try {
+      // 使用 2 空格缩进写入文件
+      await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+      console.log(chalk.green(`✓ 已更新 ${tsconfigPath} 的路径别名配置`));
+    } catch (e) {
+      console.warn(chalk.yellow(`警告: 无法写入 ${tsconfigPath}，跳过 TypeScript 路径配置`));
+    }
+  }
+}
+
 async function createProject(projectName, options) {
   const { template, features } = options;
 
@@ -209,6 +350,12 @@ async function createProject(projectName, options) {
       task: () => createApiExample(template),
     });
   }
+
+  // 添加路径别名配置
+  featureSetupTasks.push({
+    name: "路径别名",
+    task: () => setupPathAliases(template),
+  });
 
   if (featureSetupTasks.length > 0) {
     console.log(chalk.magenta("\n开始配置项目功能:"));
