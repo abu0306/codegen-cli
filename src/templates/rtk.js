@@ -143,13 +143,13 @@ export const useAppSelector = useSelector;
     // Determine if AppRouter is likely to be used (if router feature was also selected)
     // This is a placeholder, as direct knowledge of other features isn't available here.
     // Ideally, the main createProject orchestrator would handle App.jsx/tsx modifications.
-    const routerImport = isTypeScript ? '// import AppRouter from \'./routes\'; // Uncomment if router is set up' : '// import AppRouter from \'./routes\'; // Uncomment if router is set up';
+    const routerImport = isTypeScript ? '// import AppRouter from \'@/routes\'; // Uncomment if router is set up' : '// import AppRouter from \'@/routes\'; // Uncomment if router is set up';
     const routerComponent = '{/* <AppRouter /> */}'; 
 
     const appContent = `
 import React from 'react';
 import { Provider } from 'react-redux';
-import { store } from './store'; // Extension will be resolved
+import { store } from '@/store'; 
 ${routerImport}
 
 function App() {
@@ -160,8 +160,6 @@ function App() {
         <h1>Welcome to Tauri!</h1>
         <p>Edit src/App.${appExt} and save to reload.</p>
         <p>Redux Toolkit is set up. You can dispatch actions and select state.</p>
-        {/* Example component to use the counter might be created separately */}
-      </div>
     </Provider>
   );
 }

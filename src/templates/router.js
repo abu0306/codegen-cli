@@ -129,7 +129,7 @@ export default App;
     } else {
       appFileContent = `
 import React from 'react';
-import AppRouter from './routes';
+import AppRouter from '@/routes';
 
 ${isTypeScript ? 'const App: React.FC = () => {' : 'function App() {'}
   return <AppRouter />;
