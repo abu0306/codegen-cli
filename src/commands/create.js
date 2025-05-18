@@ -43,7 +43,10 @@ async function runAsyncTaskWithSpinner({
         }
         child.on("close", (code) => {
           // 对于 lint:fix 命令，忽略错误码
-          if (code === 0 || (cmd === "npm" && args[0] === "run" && args[1] === "lint:fix")) {
+          if (
+            code === 0 ||
+            (cmd === "npm" && args[0] === "run" && args[1] === "lint:fix")
+          ) {
             resolve();
           } else {
             const err = new Error(
@@ -250,8 +253,6 @@ async function createProject(projectName, options) {
         successMessage: chalk.green("lint:fix 执行成功!"),
         failureMessage: chalk.red("lint:fix 执行失败."),
       });
-
-
     } else {
       console.log(chalk.yellow("没有额外的依赖需要安装。"));
     }
@@ -260,6 +261,17 @@ async function createProject(projectName, options) {
   }
 
   fs.appendFileSync(".gitignore", "\npackage-lock.json\nyarn.lock");
+
+  process.chdir("src-tauri");
+  // 增加rust 代码格式化
+  await runAsyncTaskWithSpinner({
+    cmd: "cargo",
+    args: ["fmt"],
+    initialMessage: chalk.blue("正在格式化 Rust 代码..."),
+    successMessage: chalk.green("Rust 代码格式化成功!"),
+    failureMessage: chalk.red("Rust 代码格式化失败."),
+  });
+
   process.chdir(originalCwd);
   await checkProgress(projectName, features);
 }
@@ -440,13 +452,9 @@ export async function startSseStream() {
 
     pkgJson = await fs.readJson(pkgJsonPath);
 
-    console.log("package.json 内容", pkgJson);
-
     const deps = { ...pkgJson.dependencies, ...pkgJson.devDependencies };
 
     // 2. 检查 @tauri-apps/api 是否存在
-    console.log("deps", deps);
-
     if (!deps["@tauri-apps/api"]) {
       console.log(chalk.blue("正在安装 @tauri-apps/api..."));
       await runAsyncTaskWithSpinner({
@@ -461,14 +469,24 @@ export async function startSseStream() {
 
   // 4. 写入 commands.rs
   const commandsRsContent = `
+use std::collections::HashMap;
+use tauri::ipc::Channel;
+
 #[tauri::command]
 pub async fn fetch_data() -> Result<String, String> {
     // 这里添加你的业务逻辑
     Ok("Hello from Rust! From commands.rs".to_string())
 }
 
+pub struct HttpRequest<T> {
+    path: String,
+    method: String,
+    body: Option<T>,
+    headers: HashMap<String, String>,
+}
+
 #[tauri::command]
-pub async fn wispaper_stream(
+pub async fn stream(
     request: HttpRequest<String>,
     on_event: Channel<Vec<u8>>,
 ) -> Result<(), String> {
@@ -482,7 +500,12 @@ pub async fn wispaper_stream(
 
     // Mock 数据流
     for i in 0..5 {
-        let message = format!("data: Mock message {}\n\n", i);
+        let message = format!(
+            "data: Mock message {}
+
+",
+            i
+        );
         on_event
             .send(message.into_bytes())
             .map_err(|e| e.to_string())?;
