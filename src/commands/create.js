@@ -500,12 +500,7 @@ pub async fn stream(
 
     // Mock 数据流
     for i in 0..5 {
-        let message = format!(
-            "data: Mock message {}
-
-",
-            i
-        );
+        let message = format!("data: Mock message {}", i);
         on_event
             .send(message.into_bytes())
             .map_err(|e| e.to_string())?;
@@ -664,8 +659,8 @@ async function patchLibRsForApiHandler(libName = "lib") {
         if (list.includes("commands::fetch_data")) return m;
         const trimmed = list.trim().replace(/,\s*$/, "");
         const newList = trimmed
-          ? `${trimmed}, commands::fetch_data`
-          : "commands::fetch_data";
+          ? `${trimmed}, commands::fetch_data, commands::stream`
+          : "commands::fetch_data, commands::stream";
         return `${prefix}${newList}]`;
       });
       libContent = libContent.replace(
@@ -688,8 +683,8 @@ async function patchLibRsForApiHandler(libName = "lib") {
       const newHandlerList = handlerList.includes("commands::fetch_data")
         ? handlerList
         : handlerList
-        ? `${handlerList}, commands::fetch_data`
-        : "commands::fetch_data";
+        ? `${handlerList}, commands::fetch_data, commands::stream`
+        : "commands::fetch_data, commands::stream";
       const multiPlatformBlock = [
         ".invoke_handler(",
         '            #[cfg(not(target_os = "windows"))]',
