@@ -42,7 +42,8 @@ async function runAsyncTaskWithSpinner({
           child.stderr.on("data", (data) => (stderrData += data.toString()));
         }
         child.on("close", (code) => {
-          if (code === 0) {
+          // 对于 lint:fix 命令，忽略错误码
+          if (code === 0 || (cmd === "npm" && args[0] === "run" && args[1] === "lint:fix")) {
             resolve();
           } else {
             const err = new Error(
