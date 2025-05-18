@@ -142,8 +142,6 @@ export const useAppSelector = useSelector;
     );
   }
 
-  // More robust check for Provider and basic App structure
-  // This is still a heuristic and might not cover all cases perfectly.
   if (
     existingAppContent.includes("<Provider store={store}>") &&
     existingAppContent.includes("./store")
@@ -154,12 +152,9 @@ export const useAppSelector = useSelector;
       )
     );
   } else {
-    // Determine if AppRouter is likely to be used (if router feature was also selected)
-    // This is a placeholder, as direct knowledge of other features isn't available here.
-    // Ideally, the main createProject orchestrator would handle App.jsx/tsx modifications.
     const routerImport = isTypeScript
-      ? "// import AppRouter from '@/routes'; // Uncomment if router is set up"
-      : "// import AppRouter from '@/routes'; // Uncomment if router is set up";
+      ? "// import AppRouter from '@/routes';"
+      : "// import AppRouter from '@/routes';";
     const routerComponent = "{/* <AppRouter /> */}";
 
     const appContent = `

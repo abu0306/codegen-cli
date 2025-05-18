@@ -1,76 +1,81 @@
-const fs = require('fs-extra');
-const chalk = require('chalk');
-const path = require('path'); // 确保引入 path 模块
+const fs = require("fs-extra");
+const chalk = require("chalk");
+const path = require("path");
 
 async function checkProgress(projectName, features) {
-  console.log(chalk.blue('\n检查项目创建进度...'));
+  console.log(chalk.blue("\n检查项目创建进度..."));
 
-  const projectPath = path.resolve(process.cwd(), projectName); // 将 projectName 转为绝对路径
-  console.log(chalk.blue('正在检查项目基础结构...' + projectPath));
-  console.log('当前工作目录:', process.cwd());
+  const projectPath = path.resolve(process.cwd(), projectName);
+  console.log(chalk.blue("正在检查项目基础结构..." + projectPath));
+  console.log("当前工作目录:", process.cwd());
 
   const checks = [
     {
-      name: '项目基础结构',
+      name: "项目基础结构",
       check: async () => {
-        const exists = await fs.pathExists(projectPath); // 使用绝对路径检查
+        const exists = await fs.pathExists(projectPath);
         return exists;
-      }
+      },
     },
     {
-      name: 'package.json',
+      name: "package.json",
       check: async () => {
-        const exists = await fs.pathExists(path.join(projectName, 'package.json'));
+        const exists = await fs.pathExists(
+          path.join(projectName, "package.json")
+        );
         return exists;
-      }
+      },
     },
     {
-      name: 'Tauri 配置',
+      name: "Tauri 配置",
       check: async () => {
-        const exists = await fs.pathExists(path.join(projectName, 'src-tauri'));
+        const exists = await fs.pathExists(path.join(projectName, "src-tauri"));
         return exists;
-      }
-    }
+      },
+    },
   ];
 
-  // 根据选择的功能添加检查项
-  if (features.includes('rtk')) {
+  if (features.includes("rtk")) {
     checks.push({
-      name: 'Redux Toolkit 配置',
+      name: "Redux Toolkit 配置",
       check: async () => {
-        const exists = await fs.pathExists(path.join(projectName, 'src/store'));
+        const exists = await fs.pathExists(path.join(projectName, "src/store"));
         return exists;
-      }
+      },
     });
   }
 
-  if (features.includes('router')) {
+  if (features.includes("router")) {
     checks.push({
-      name: 'React Router 配置',
+      name: "React Router 配置",
       check: async () => {
-        const exists = await fs.pathExists(path.join(projectName, 'src/routes'));
+        const exists = await fs.pathExists(
+          path.join(projectName, "src/routes")
+        );
         return exists;
-      }
+      },
     });
   }
 
-  if (features.includes('eslint')) {
+  if (features.includes("eslint")) {
     checks.push({
-      name: 'ESLint 配置',
+      name: "ESLint 配置",
       check: async () => {
-        const exists = await fs.pathExists(path.join(projectName, 'eslint.config.js'));
+        const exists = await fs.pathExists(
+          path.join(projectName, "eslint.config.js")
+        );
         return exists;
-      }
+      },
     });
   }
 
-  if (features.includes('api')) {
+  if (features.includes("api")) {
     checks.push({
-      name: 'API 示例',
+      name: "API 示例",
       check: async () => {
-        const exists = await fs.pathExists(path.join(projectName, 'src/api'));
+        const exists = await fs.pathExists(path.join(projectName, "src/api"));
         return exists;
-      }
+      },
     });
   }
 
@@ -86,5 +91,5 @@ async function checkProgress(projectName, features) {
 }
 
 module.exports = {
-  checkProgress
-}; 
+  checkProgress,
+};

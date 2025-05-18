@@ -15,7 +15,6 @@ async function runCmd(cmd, args, opts = {}) {
 }
 
 async function setupHuskyLintStaged() {
-  // 0. 确保有 .git 仓库
   if (!(await fs.pathExists(".git"))) {
     await runCmd("git", ["init"]);
   }
@@ -35,10 +34,7 @@ async function setupHuskyLintStaged() {
   }
   await fs.writeJson(pkgPath, pkg, { spaces: 2 });
 
-  // 3. 初始化 husky（生成 .husky/_/husky.sh）
   await runCmd("npx", ["husky", "install"]);
-
-  // 4. 写 pre-commit 钩子
   const preCommitPath = ".husky/pre-commit";
   const preCommitContent =
     '#!/bin/sh\n. "$(dirname "$0")/_/husky.sh"\nnpx lint-staged\n';

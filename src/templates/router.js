@@ -13,7 +13,6 @@ async function setupRouter(template) {
   await fs.ensureDir(routesDir);
   await fs.ensureDir(pagesDir);
 
-  // --- Create Page Components ---
   const homePageComponentContent = `
 import React from 'react';
 
@@ -64,7 +63,6 @@ ${isTypeScript ? "\nexport default About;" : ""}
     )
   );
 
-  // --- Create Router Configuration (AppRouter) ---
   const routerConfigFileContent = `
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -96,7 +94,6 @@ ${isTypeScript ? "\nexport default AppRouter;" : ""}
     chalk.green(`Created router configuration in src/routes/index.${routesExt}`)
   );
 
-  // --- Update App.{jsx|tsx} to include AppRouter ---
   const appFilePath = path.join("src", `App.${appExt}`);
   let appFileContent = "";
   try {
@@ -129,9 +126,7 @@ export default App;
   } else {
     const importAppRouter = `import AppRouter from './routes'; // Will resolve .jsx or .tsx`;
 
-    // Add import if not already there (basic check)
     if (!appFileContent.includes(importAppRouter)) {
-      // Try to add import at the top with other imports
       const importReactMatch = appFileContent.match(/^import React[^;]*;/m);
       if (importReactMatch) {
         appFileContent = appFileContent.replace(
@@ -139,7 +134,6 @@ export default App;
           `${importReactMatch[0]}\n${importAppRouter}`
         );
       } else {
-        // Prepend if no React import found (less ideal)
         appFileContent = `${importAppRouter}\n${appFileContent}`;
       }
     }
@@ -149,7 +143,7 @@ export default App;
         "{/* Your existing app structure or <AppRouter /> if using router */}";
       const tauriWelcomePlaceholder =
         "{/* Replace div below with <AppRouter /> if you have routing enabled */}";
-      const genericDivPlaceholder = "<div>\n        <h1>Welcome to Tauri!</h1>"; // From RTK template
+      const genericDivPlaceholder = "<div>\n        <h1>Welcome to Tauri!</h1>";
 
       if (appFileContent.includes(rtkPlaceholder)) {
         appFileContent = appFileContent.replace(
