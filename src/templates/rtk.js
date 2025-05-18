@@ -1,15 +1,15 @@
-const fs = require('fs-extra');
-const path = require('path');
-const chalk = require('chalk');
+const fs = require("fs-extra");
+const path = require("path");
+const chalk = require("chalk");
 
 async function setupRTK(template) {
-  const isTypeScript = template === 'react-ts';
-  const ext = isTypeScript ? 'ts' : 'js';
-  const appExt = isTypeScript ? 'tsx' : 'jsx';
+  const isTypeScript = template === "react-ts";
+  const ext = isTypeScript ? "ts" : "js";
+  const appExt = isTypeScript ? "tsx" : "jsx";
 
-  const storeDir = path.join('src', 'store');
+  const storeDir = path.join("src", "store");
   await fs.ensureDir(storeDir);
-  await fs.ensureDir(path.join(storeDir, 'slices'));
+  await fs.ensureDir(path.join(storeDir, "slices"));
 
   let storeConfig = `
 import { configureStore } from '@reduxjs/toolkit';
@@ -102,7 +102,10 @@ export const { increment, decrement, incrementByAmount } = counterSlice.actions;
 export default counterSlice.reducer;
 `;
   }
-  await fs.outputFile(path.join(storeDir, 'slices', `counterSlice.${ext}`), counterSliceContent.trim());
+  await fs.outputFile(
+    path.join(storeDir, "slices", `counterSlice.${ext}`),
+    counterSliceContent.trim()
+  );
 
   let hooksContent;
   if (isTypeScript) {
@@ -127,24 +130,37 @@ export const useAppSelector = useSelector;
   }
   await fs.outputFile(path.join(storeDir, `hooks.${ext}`), hooksContent.trim());
 
-  const appFilePath = path.join('src', `App.${appExt}`);
-  let existingAppContent = '';
+  const appFilePath = path.join("src", `App.${appExt}`);
+  let existingAppContent = "";
   try {
-    existingAppContent = await fs.readFile(appFilePath, 'utf8');
+    existingAppContent = await fs.readFile(appFilePath, "utf8");
   } catch (e) {
-    console.warn(chalk.yellow(`Warning: Could not read ${appFilePath}. A new App file might be created or an existing one might be simpler than expected.`));
+    console.warn(
+      chalk.yellow(
+        `Warning: Could not read ${appFilePath}. A new App file might be created or an existing one might be simpler than expected.`
+      )
+    );
   }
 
   // More robust check for Provider and basic App structure
   // This is still a heuristic and might not cover all cases perfectly.
-  if (existingAppContent.includes('<Provider store={store}>') && existingAppContent.includes('./store')) {
-    console.log(chalk.blue(`Redux Provider setup already seems to be in ${appFilePath}. Skipping App file modification for RTK.`));
+  if (
+    existingAppContent.includes("<Provider store={store}>") &&
+    existingAppContent.includes("./store")
+  ) {
+    console.log(
+      chalk.blue(
+        `Redux Provider setup already seems to be in ${appFilePath}. Skipping App file modification for RTK.`
+      )
+    );
   } else {
     // Determine if AppRouter is likely to be used (if router feature was also selected)
     // This is a placeholder, as direct knowledge of other features isn't available here.
     // Ideally, the main createProject orchestrator would handle App.jsx/tsx modifications.
-    const routerImport = isTypeScript ? '// import AppRouter from \'@/routes\'; // Uncomment if router is set up' : '// import AppRouter from \'@/routes\'; // Uncomment if router is set up';
-    const routerComponent = '{/* <AppRouter /> */}'; 
+    const routerImport = isTypeScript
+      ? "// import AppRouter from '@/routes'; // Uncomment if router is set up"
+      : "// import AppRouter from '@/routes'; // Uncomment if router is set up";
+    const routerComponent = "{/* <AppRouter /> */}";
 
     const appContent = `
 import React from 'react';
@@ -160,6 +176,7 @@ function App() {
         <h1>Welcome to Tauri!</h1>
         <p>Edit src/App.${appExt} and save to reload.</p>
         <p>Redux Toolkit is set up. You can dispatch actions and select state.</p>
+      </div>
     </Provider>
   );
 }
@@ -167,10 +184,14 @@ function App() {
 export default App;
 `;
     await fs.outputFile(appFilePath, appContent.trim());
-    console.log(chalk.green(`${appFilePath} has been updated/created with Redux Provider.`));
+    console.log(
+      chalk.green(
+        `${appFilePath} has been updated/created with Redux Provider.`
+      )
+    );
   }
 }
 
 module.exports = {
-  setupRTK
-}; 
+  setupRTK,
+};
