@@ -13,7 +13,6 @@ const inquirer = require("inquirer");
 const globalSpinnerChars = ["-", "\\", "|", "/"];
 let overallProgressSpinnerIndex = 0;
 
-// Helper function to run a task (async function or command) with a spinner
 async function runAsyncTaskWithSpinner({
   taskFn,
   cmd,
@@ -44,7 +43,6 @@ async function runAsyncTaskWithSpinner({
           child.stderr.on("data", (data) => (stderrData += data.toString()));
         }
         child.on("close", (code) => {
-          // 对于 lint:fix 命令，忽略错误码
           if (
             code === 0 ||
             (cmd === "npm" && args[0] === "run" && args[1] === "lint:fix")
@@ -85,7 +83,6 @@ async function runAsyncTaskWithSpinner({
   }
 }
 
-// Auxiliary function: display task status (for synchronous tasks)
 function showTaskStatus(message, status = "busy") {
   let symbol;
   let colorFunc = chalk.blue;
@@ -108,7 +105,6 @@ function showTaskStatus(message, status = "busy") {
   }
 }
 
-// Auxiliary function: display # filled progress bar
 function displayHashProgressBar(
   current,
   total,
@@ -146,7 +142,6 @@ function displayHashProgressBar(
 async function setupPathAliases(template) {
   const isTypeScript = template === 'react-ts';
   
-  // Update vite.config.ts/js
   const viteConfigPath = `vite.config.${isTypeScript ? 'ts' : 'js'}`;
   let viteConfig = '';
   try {
@@ -155,22 +150,17 @@ async function setupPathAliases(template) {
     console.warn(chalk.yellow(`警告: 无法读取 ${viteConfigPath}，跳过 Vite 别名配置`));
   }
 
-  // 检查是否已存在 resolve.alias 配置
   if (viteConfig && !viteConfig.includes('resolve:') || !viteConfig.includes('alias:')) {
-    // 准备要添加的配置
     const aliasConfig = `  resolve: {
     alias: {
       '@': '/src',
     },
   },`;
 
-    // 在 defineConfig 中添加配置
     if (viteConfig.includes('defineConfig(')) {
-      // 检查是否是异步配置
       const isAsyncConfig = viteConfig.includes('defineConfig(async');
       
       if (isAsyncConfig) {
-        // 处理异步配置
         const configRegex = /defineConfig\(async\s*\([^)]*\)\s*=>\s*\(\{([\s\S]*?)\}\)\)/;
         const match = viteConfig.match(configRegex);
         
@@ -178,23 +168,18 @@ async function setupPathAliases(template) {
           const configContent = match[1];
           let newConfig = configContent;
 
-          // 在 plugins 配置后添加 resolve 配置
           if (configContent.includes('plugins:')) {
-            // 找到 plugins 配置的结束位置
             const pluginsEndIndex = configContent.indexOf('],');
             if (pluginsEndIndex !== -1) {
-              // 在 plugins 配置后添加 resolve 配置
               newConfig = configContent.slice(0, pluginsEndIndex + 2) + '\n' + aliasConfig + configContent.slice(pluginsEndIndex + 2);
             }
           } else {
-            // 如果没有 plugins 配置，直接添加
             newConfig = configContent + '\n' + aliasConfig;
           }
 
           viteConfig = viteConfig.replace(configRegex, `defineConfig(async () => ({${newConfig}}))`);
         }
       } else {
-        // 处理同步配置
         const configRegex = /defineConfig\(\{([\s\S]*?)\}\)/;
         const match = viteConfig.match(configRegex);
         
@@ -202,16 +187,12 @@ async function setupPathAliases(template) {
           const configContent = match[1];
           let newConfig = configContent;
 
-          // 在 plugins 配置后添加 resolve 配置
           if (configContent.includes('plugins:')) {
-            // 找到 plugins 配置的结束位置
             const pluginsEndIndex = configContent.indexOf('],');
             if (pluginsEndIndex !== -1) {
-              // 在 plugins 配置后添加 resolve 配置
               newConfig = configContent.slice(0, pluginsEndIndex + 2) + '\n' + aliasConfig + configContent.slice(pluginsEndIndex + 2);
             }
           } else {
-            // 如果没有 plugins 配置，直接添加
             newConfig = configContent + '\n' + aliasConfig;
           }
 
@@ -230,18 +211,15 @@ async function setupPathAliases(template) {
     console.log(chalk.blue(`✓ ${viteConfigPath} 已包含路径别名配置`));
   }
 
-  // 对于 TypeScript 项目，更新 tsconfig.json
   if (isTypeScript) {
     const tsconfigPath = 'tsconfig.json';
     let tsconfig = {};
     
     try {
-      // 读取现有的 tsconfig.json
       const tsconfigContent = await fs.readFile(tsconfigPath, 'utf-8');
       tsconfig = JSON.parse(tsconfigContent);
     } catch (e) {
       console.warn(chalk.yellow(`警告: 无法读取 ${tsconfigPath}，将创建新的配置`));
-      // 创建基本的 tsconfig 配置
       tsconfig = {
         compilerOptions: {
           target: "ES2020",
@@ -265,17 +243,14 @@ async function setupPathAliases(template) {
       };
     }
 
-    // 确保 compilerOptions 存在
     tsconfig.compilerOptions = tsconfig.compilerOptions || {};
     
-    // 添加路径别名配置
     tsconfig.compilerOptions.baseUrl = '.';
     tsconfig.compilerOptions.paths = {
       '@/*': ['src/*']
     };
 
     try {
-      // 使用 2 空格缩进写入文件
       await fs.writeFile(tsconfigPath, JSON.stringify(tsconfig, null, 2));
       console.log(chalk.green(`✓ 已更新 ${tsconfigPath} 的路径别名配置`));
     } catch (e) {
@@ -298,7 +273,6 @@ async function createProject(projectName, options) {
     }
   }
 
-  // Create Tauri project using runAsyncTaskWithSpinner
   const tauriCreateCommand = `curl -fsSL https://create.tauri.app/sh | sh -s -- -y ${projectName} --template ${template} --manager npm --identifier com.${projectName}.app`;
   await runAsyncTaskWithSpinner({
     cmd: "bash",
@@ -311,7 +285,6 @@ async function createProject(projectName, options) {
   const originalCwd = process.cwd();
   process.chdir(projectName);
 
-  // 新增：husky + lint-staged 支持
   await runAsyncTaskWithSpinner({
     taskFn: setupHuskyLintStaged,
     initialMessage: chalk.blue("正在配置 husky + lint-staged..."),
@@ -352,7 +325,6 @@ async function createProject(projectName, options) {
     });
   }
 
-  // 添加路径别名配置
   featureSetupTasks.push({
     name: "路径别名",
     task: () => setupPathAliases(template),
@@ -411,7 +383,6 @@ async function createProject(projectName, options) {
   fs.appendFileSync(".gitignore", "\npackage-lock.json\nyarn.lock");
 
   process.chdir("src-tauri");
-  // 增加rust 代码格式化
   await runAsyncTaskWithSpinner({
     cmd: "cargo",
     args: ["fmt"],
@@ -425,7 +396,6 @@ async function createProject(projectName, options) {
 }
 
 async function createApiExample(template) {
-  // 1. 创建前端 API 调用示例
   const apiExample = `
 import { invoke } from '@tauri-apps/api/core';
 
@@ -440,7 +410,6 @@ export async function fetchData() {
 }
 `;
 
-  // 2. 创建 SSE 工具
   const sseUtilContent =
     template === "react-ts"
       ? `
@@ -539,7 +508,6 @@ export async function sseRequest({ path, headers, body, onMessage }) {
 }
 `;
 
-  // 3. 创建 SSE 示例
   const sseExampleContent =
     template === "react-ts"
       ? `
@@ -555,7 +523,6 @@ export async function startSseStream() {
             body: JSON.stringify({ query: 'example' }),
             onMessage: (message) => {
                 console.log('Received SSE message:', message);
-                // Handle the message here
             },
         });
     } catch (error) {
@@ -577,7 +544,6 @@ export async function startSseStream() {
             body: JSON.stringify({ query: 'example' }),
             onMessage: (message) => {
                 console.log('Received SSE message:', message);
-                // Handle the message here
             },
         });
     } catch (error) {
@@ -615,7 +581,6 @@ export async function startSseStream() {
     }
   }
 
-  // 4. 写入 commands.rs
   const commandsRsContent = `
 use std::collections::HashMap;
 use tauri::ipc::Channel;
@@ -660,7 +625,6 @@ pub async fn stream(
 `;
   await fs.outputFile("src-tauri/src/commands.rs", commandsRsContent);
 
-  // 5. 处理 main.rs
   const mainRsPath = "src-tauri/src/main.rs";
   let mainRsContentOriginal;
   try {
@@ -676,7 +640,6 @@ pub async fn stream(
   }
   let mainRsContentModified = mainRsContentOriginal;
 
-  // 检查是否为库委托模式
   const libRunPattern = /([a-zA-Z_][a-zA-Z0-9_]*)::run\(\)/;
   const hasLibRunCall = libRunPattern.test(mainRsContentOriginal);
   const mainDoesNotHaveBuilder = !mainRsContentOriginal.includes(
@@ -685,12 +648,10 @@ pub async fn stream(
   const mainRsDelegatesToLib = hasLibRunCall && mainDoesNotHaveBuilder;
 
   if (mainRsDelegatesToLib) {
-    // 自动处理 lib.rs
     await patchLibRsForApiHandler();
     return;
   }
 
-  // 非库委托模式，自动处理 main.rs
   let successfullyConfiguredMainRs = false;
   if (!mainRsContentModified.includes("mod commands;")) {
     mainRsContentModified = "mod commands;\n" + mainRsContentModified;
@@ -769,7 +730,7 @@ mod commands;
 
 fn main() {
   tauri::Builder::default()
-    .invoke_handler(commands::handler()) // <--- Ensure this line
+    .invoke_handler(commands::handler())
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
@@ -779,7 +740,6 @@ fn main() {
   }
 }
 
-// 自动 patch lib.rs，合并 fetch_data
 async function patchLibRsForApiHandler(libName = "lib") {
   const libRsPath = `src-tauri/src/${libName}.rs`;
   let libContent;
@@ -789,13 +749,11 @@ async function patchLibRsForApiHandler(libName = "lib") {
     console.error(chalk.red(`Error reading ${libRsPath}: ${e.message}`));
     return;
   }
-  // 1. 确保 mod commands; 存在
   if (!libContent.includes("mod commands;")) {
     libContent = "mod commands;\n" + libContent;
     console.log(chalk.green("Added 'mod commands;' to lib.rs"));
   }
 
-  // 2. 查找 .invoke_handler(...) 块
   const invokeHandlerBlockPattern = /\.invoke_handler\(([\s\S]*?)\)/m;
   const handlerPattern = /(tauri::generate_handler!\[)([\s\S]*?)\]/g;
 
@@ -803,7 +761,6 @@ async function patchLibRsForApiHandler(libName = "lib") {
   if (match) {
     const inner = match[1];
     if (inner.includes("#[cfg(")) {
-      // 已经是多平台，分别插入
       const replaced = inner.replace(handlerPattern, (m, prefix, list) => {
         if (list.includes("commands::fetch_data")) return m;
         const trimmed = list.trim().replace(/,\s*$/, "");
@@ -822,7 +779,6 @@ async function patchLibRsForApiHandler(libName = "lib") {
         )
       );
     } else {
-      // 单平台，自动转换为多平台
       const handlerMatch = inner.match(
         /tauri::generate_handler!\[([\s\S]*?)\]/m
       );
