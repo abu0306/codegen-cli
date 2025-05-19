@@ -435,7 +435,7 @@ export async function sseRequest({ path, headers, body, onMessage }: SseOptions)
       bytes = new Uint8Array(Object.values(value));
     }
     const text = decoder.decode(bytes);
-    const lines = text.split('\n');
+    const lines = text.split(String.fromCharCode(10));
     for (const line of lines) {
       if (line.startsWith('data: ')) {
         const message = line.slice(6);
@@ -485,7 +485,7 @@ export async function sseRequest({ path, headers, body, onMessage }) {
             bytes = new Uint8Array(Object.values(value));
         }
         const text = decoder.decode(bytes);
-        const lines = text.split('\\n');
+        const lines = text.split(String.fromCharCode(10));
         for (const line of lines) {
             if (line.startsWith('data: ')) {
                 const message = line.slice(6);
